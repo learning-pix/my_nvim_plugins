@@ -17,6 +17,7 @@ local plugins = {
 	"nvim-tree/nvim-tree.lua",  -- 文档树
 	"nvim-tree/nvim-web-devicons", -- 文档树图标
 	"christoomey/vim-tmux-navigator", -- 用ctl-hjkl来定位窗口
+	"lervag/vimtex", -- LaTeX 编辑/编译
    {
 		"nvim-treesitter/nvim-treesitter", -- 语法高亮  
 		run = ':TSUpdate', -- 确保在安装后更新  
