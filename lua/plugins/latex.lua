@@ -36,11 +36,39 @@ vim.g.vimtex_compiler_latexmk = {
   continuous = 1,
 }
 
+vim.api.nvim_create_autocmd("User", {
+  pattern = "VimtexEventCompileSuccess",
+  callback = function()
+    if vim.g.vimtex_manual_clean_pending then
+      vim.g.vimtex_manual_clean_pending = false
+      vim.cmd("silent! VimtexClean")
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd("User", {
+  pattern = "VimtexEventCompileFailed",
+  callback = function()
+    vim.g.vimtex_manual_clean_pending = false
+  end,
+})
+
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "tex",
   callback = function(event)
     local options = { buffer = event.buf, silent = true, noremap = true }
-    vim.keymap.set("n", "<leader>ll", ":VimtexCompile<CR>", options)
-    vim.keymap.set("n", "<leader>lv", ":VimtexCompile<CR>:VimtexView<CR>", options)
+    vim.keymap.set("n", "<leader>ll", function()
+      vim.g.vimtex_manual_clean_pending = false
+      vim.cmd("VimtexCompile")
+    end, options)
+    vim.keymap.set("n", "<leader>lc", function()
+      vim.g.vimtex_manual_clean_pending = true
+      vim.cmd("VimtexCompileSS")
+    end, options)
+    vim.keymap.set("n", "<leader>lv", function()
+      vim.g.vimtex_manual_clean_pending = false
+      vim.cmd("VimtexCompile")
+      vim.cmd("VimtexView")
+    end, options)
   end,
 })
