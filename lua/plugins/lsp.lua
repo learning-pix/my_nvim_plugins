@@ -12,6 +12,7 @@ require("mason-lspconfig").setup({
 	ensure_installed = {
 		"lua_ls",
 		"texlab",
+		"pyright"
 	},
 	automatic_installation = true,
 })
