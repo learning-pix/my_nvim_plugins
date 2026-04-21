@@ -44,6 +44,14 @@ local plugins = {
 	"numToStr/Comment.nvim", -- gcc和gc注释
 	"windwp/nvim-autopairs", -- 自动补全括号
 	"akinsho/bufferline.nvim", -- buffer分割线
+	{
+		"akinsho/toggleterm.nvim", -- 快速编译/运行终端
+		version = "*",
+		lazy = false,
+		config = function()
+			require("plugins.compile")
+		end,
+	},
 
 }
 local opts = {} -- 注意要定义这个变量
