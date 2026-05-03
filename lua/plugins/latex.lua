@@ -5,6 +5,47 @@ local function is_executable(path)
   return path and path ~= "" and (vim.fn.filereadable(path) == 1 or vim.fn.executable(path) == 1)
 end
 
+local function fallback_compile(view_after)
+  local file = vim.api.nvim_buf_get_name(0)
+  if file == "" then
+    vim.notify("当前缓冲区没有文件名，无法编译", vim.log.levels.WARN)
+    return
+  end
+
+  local dir = vim.fn.fnamemodify(file, ":p:h")
+  local name = vim.fn.fnamemodify(file, ":t")
+
+  local job = vim.fn.jobstart({
+    "latexmk",
+    "-xelatex",
+    "-interaction=nonstopmode",
+    "-synctex=1",
+    "-pdf",
+    name,
+  }, {
+    cwd = dir,
+    stdout_buffered = true,
+    stderr_buffered = true,
+    on_exit = function(_, code)
+      vim.schedule(function()
+        if code == 0 then
+          vim.notify("LaTeX 编译成功", vim.log.levels.INFO)
+          if view_after then
+            local pdf = vim.fn.fnamemodify(file, ":r") .. ".pdf"
+            vim.fn.jobstart({ "cmd", "/c", "start", "", pdf }, { detach = true })
+          end
+        else
+          vim.notify("LaTeX 编译失败，退出码: " .. code, vim.log.levels.ERROR)
+        end
+      end)
+    end,
+  })
+
+  if job <= 0 then
+    vim.notify("无法启动 latexmk，请确认已安装并加入 PATH", vim.log.levels.ERROR)
+  end
+end
+
 -- SumatraPDF 优先级查找
 local sumatra_candidates = {
   vim.env.SUMATRAPDF,  -- 环境变量
@@ -77,17 +118,29 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = function(event)
     local options = { buffer = event.buf, silent = true, noremap = true }
     vim.keymap.set("n", "<leader>ll", function()
-      vim.g.vimtex_manual_clean_pending = false
-      vim.cmd("VimtexCompile")
+      if vim.fn.exists(":VimtexCompile") == 2 then
+        vim.g.vimtex_manual_clean_pending = false
+        vim.cmd("VimtexCompile")
+      else
+        fallback_compile(false)
+      end
     end, options)
     vim.keymap.set("n", "<leader>lc", function()
-      vim.g.vimtex_manual_clean_pending = true
-      vim.cmd("VimtexCompileSS")
+      if vim.fn.exists(":VimtexCompileSS") == 2 then
+        vim.g.vimtex_manual_clean_pending = true
+        vim.cmd("VimtexCompileSS")
+      else
+        fallback_compile(false)
+      end
     end, options)
     vim.keymap.set("n", "<leader>lv", function()
-      vim.g.vimtex_manual_clean_pending = false
-      vim.cmd("VimtexCompile")
-      vim.cmd("VimtexView")
+      if vim.fn.exists(":VimtexCompile") == 2 and vim.fn.exists(":VimtexView") == 2 then
+        vim.g.vimtex_manual_clean_pending = false
+        vim.cmd("VimtexCompile")
+        vim.cmd("VimtexView")
+      else
+        fallback_compile(true)
+      end
     end, options)
   end,
 })
